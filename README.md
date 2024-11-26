@@ -4,7 +4,9 @@ A lightweight netorking solution for computer craft.
 UniNet is a very flexable, versitale, and reliable alturnative to rednet. generaly it allows you to control the flow of data, connect networks, and monitor traffic.
 
 ## Installation
-*pending*
+To download the client use `wget https://raw.githubusercontent.com/redtoast/UniNet-CC/refs/heads/main/uninet.lua`
+
+To download switch software use `wget run https://raw.githubusercontent.com/redtoast/UniNet-CC/refs/heads/main/installer.lua`
 
 ## Client
 The UniNet client is very similar to rednet from a API perspective.
