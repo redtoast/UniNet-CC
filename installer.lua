@@ -24,6 +24,7 @@ elseif key == "2" then
             end
         end
     end
+    fs.open("log.txt","w").write("<epic log>")
     shell.run("wget https://raw.githubusercontent.com/redtoast/UniNet-CC/refs/heads/main/switch.lua")
 elseif key == "3" then
     print("3")
@@ -40,6 +41,7 @@ elseif key == "3" then
             end
         end
     end
+    fs.open("log.txt","w").write("<epic log>")
     shell.run("wget https://raw.githubusercontent.com/redtoast/UniNet-CC/refs/heads/main/switch.lua")
     shell.run("wget https://raw.githubusercontent.com/redtoast/UniNet-CC/refs/heads/main/switchGUI.lua")
 else
