@@ -1,1 +1,18 @@
-# UniNet-CC
+# UniNet-Computer Craft
+A lightweight netorking solution for computer craft.
+
+UniNet is a very flexable, versitale, and reliable alturnative to rednet. generaly it allows you to control the flow of data, connect networks, and monitor traffic.
+
+## Installation
+*pending*
+
+## Client
+The UniNet client is very similar to rednet from a API perspective.
+
+Uninet has the exact same sweet of functions as rednet **EXEPT** for host(), unhost(), lookup(), and run().
+Uninet also includes openAll() and closeAll() for QOL
+
+## Switch
+A switch in networks refers to a machine that forwards data between networks and form bigger networks, in Uni that means connecting wired and wireless networks to other wired or wireless networks.
+
+simply attach modems to the switch to add that network the switch, connecting multible switches can make your networks even bigger, you can also code your own firewalls *(examples provided)* to filter, modify, or just block packets of traffic.
