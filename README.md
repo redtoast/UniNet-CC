@@ -1,7 +1,7 @@
 # UniNet-Computer Craft
-A lightweight netorking solution for computer craft.
+A lightweight networking solution for computer craft.
 
-UniNet is a very flexable, versitale, and reliable alturnative to rednet. generaly it allows you to control the flow of data, connect networks, and monitor traffic.
+UniNet is a very flexible, versatile, and reliable alternative to rednet. generally it allows you to control the flow of data, connect networks, and monitor traffic.
 
 ## Installation
 To download the client use `wget https://raw.githubusercontent.com/redtoast/UniNet-CC/refs/heads/main/uninet.lua`
