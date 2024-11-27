@@ -1,7 +1,7 @@
 output = {}
 blockoutlist={}
 
-function openAll()
+function output.openAll()
     peripheral.find("modem",function(name,modem)
         modem.open(65490)
         if modem.isWireless() then
@@ -9,21 +9,35 @@ function openAll()
         end
     end)
 end
-function open(modem)
+function output.open(modem)
     modem = peripheral.wrap(modem)
     modem.open(65490)
     if modem.isWireless() then
         modem.open(65493)
     end
 end
-function close(modem)
+function output.close(modem)
     modem = peripheral.wrap(modem)
     modem.close(65490)
     if modem.isWireless() then
         modem.close(65493)
     end
 end
-function closeAll()
+function output.close(modem)
+    modem = peripheral.wrap(modem)
+    if modem.isOpen(65490) then 
+        if modem.isWireless() then
+            if modem.isOpen(65493) then
+                return true
+            else
+                return false
+            end
+        else
+            return true
+        end
+    end
+end
+function output.closeAll()
     peripheral.find("modem",function(name,modem)
         modem.close(65490)
         if modem.isWireless() then
@@ -118,5 +132,4 @@ function output.recive(protocol,timeout)--recives uninet packets and unencapsula
     end
 end
 
-openAll()
 return output
