@@ -44,7 +44,7 @@ function o.switchDisplay(data)
         print("Traffic Data:")
         term.setBackgroundColor(colors.gray)
     end
-    print("Packets recived by switch: "..data["packetsRecived"])
+    print("Packets recieved by switch: "..data["packetsRecieved"])
     print("Packets sent to clients: "..data["packetsSent"])
     print("Packets forwarded to other switches: "..data["packetsForwarded"])
     if colored then
