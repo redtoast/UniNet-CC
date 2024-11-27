@@ -51,7 +51,7 @@ function openPorts()
         ports[x].open(65492)
         if ports[x].isWireless() then
             wireless = true
-            ports[x].open(65498) --port open for wireless discovery handshake
+            ports[x].open(65494) --port open for wireless discovery handshake
         else
             wired = true
         end
@@ -170,40 +170,28 @@ function attemptForward(id,message)--attemps to find destination computer for pa
             end
         else
             if ports[x].isWireless() then
-                --handshakeid = os.startTimer(0.5)
-                --print(handshakeid)
-                --ports[x].transmit(65493,id,handshakeid)
-                --state = true
-                --while state do
-                --    event,timerid,channel,_,reply = os.pullEvent()
-                --    if event=="timer" and timerid==handshakeid then
-                --        state=false
-                --    elseif event=="modem_message" and channel==65494 then
-                --        if reply==handshakeid then
-                --            firewall = firewallInterface(message,true,peripheral.getName(ports[x]),false)
-                --            if firewall==true or firewall==nil then
-                --                message["from"] = os.getComputerID()
-                --                ports[x].transmit(65490,0,message)
-                --            elseif firewall ~= false then
-                --                message["data"] = firewall
-                --                FWmodified = FWmodified + 1
-                --                message["from"] = os.getComputerID()
-                --                ports[x].transmit(65490,0,message)
-                --            end
-                --            return true
-                --        end
-                --    end
-                --end
-                --this is a terrible patch half ass bitch fuck solution to a problem i can fix LATER
-                firewall = firewallInterface(message,true,peripheral.getName(ports[x]),false)
-                if firewall==true or firewall==nil then
-                    message["from"] = os.getComputerID()
-                    ports[x].transmit(65490,0,message)
-                elseif firewall ~= false then
-                    message["data"] = firewall
-                    FWmodified = FWmodified + 1
-                    message["from"] = os.getComputerID()
-                    ports[x].transmit(65490,0,message)
+                handshakeid = os.startTimer(0.5)
+                ports[x].transmit(65493,id,handshakeid)
+                state = true
+                while state do
+                    event,timerid,channel,_,reply = os.pullEvent()
+                    if event=="timer" and timerid==handshakeid then
+                        state=false
+                    elseif event=="modem_message" and channel==65494 then
+                        if reply==handshakeid then
+                            firewall = firewallInterface(message,true,peripheral.getName(ports[x]),false)
+                            if firewall==true or firewall==nil then
+                                message["from"] = os.getComputerID()
+                                ports[x].transmit(65490,0,message)
+                            elseif firewall ~= false then
+                                message["data"] = firewall
+                                FWmodified = FWmodified + 1
+                                message["from"] = os.getComputerID()
+                                ports[x].transmit(65490,0,message)
+                            end
+                            return true
+                        end
+                    end
                 end
             else
                 terminals = ports[x].getNamesRemote()
