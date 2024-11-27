@@ -25,7 +25,7 @@ function output.close(modem)
 end
 function output.close(modem)
     modem = peripheral.wrap(modem)
-    if modem.isOpen(65490) then 
+    if modem.isOpen(65490) then
         if modem.isWireless() then
             if modem.isOpen(65493) then
                 return true
@@ -46,7 +46,7 @@ function output.closeAll()
     end)
 end
 
-function validatePacket(packet,protocol)--validates the incoming modem messages are uninet packets and ment for this machine to recive
+function validatePacket(packet,protocol)--validates the incoming modem messages are uninet packets and ment for this machine to recieve
     if not pcall(function()
         buffer = textutils.serializeJSON(packet)
         textutils.unserializeJSON(buffer)
@@ -81,7 +81,7 @@ function output.broadcast(data,protocol)--sends a message with a recipient id of
         ["data"] = data,
         ["protocol"] = protocol
     }
-    
+
     packet["check"] = tostring(packet)
     table.insert(blockoutlist,packet["check"])
 
@@ -90,16 +90,16 @@ function output.broadcast(data,protocol)--sends a message with a recipient id of
     end)
 end
 
-function output.send(reciver,data,protocol)--sends a packet with encapsulated data
+function output.send(reciever,data,protocol)--sends a packet with encapsulated data
     packet = {
-        ["destination"] = reciver,
+        ["destination"] = reciever,
         ["source"] = os.getComputerID(),
         ["age"] = 10,
         ["type"] = "beta",
         ["data"] = data,
         ["protocol"] = protocol
     }
-    
+
     packet["check"] = tostring(packet)
 
     peripheral.find("modem",function(name,modem)
@@ -107,7 +107,7 @@ function output.send(reciver,data,protocol)--sends a packet with encapsulated da
     end)
 end
 
-function output.recive(protocol,timeout)--recives uninet packets and unencapsulate's them
+function output.recieve(protocol,timeout)--recieves uninet packets and unencapsulate's them
     if timeout then
         timeoutid = os.startTimer(timeout)
     else

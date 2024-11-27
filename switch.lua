@@ -4,7 +4,7 @@ blockoutlist={}
 --stats, cleanly dumped into global with no care or concern
 wireless = false
 wired = false
-packetsRecived=0
+packetsRecieved=0
 packetsForwarded=0
 packetsSent=0
 disregardedpackets=0
@@ -29,7 +29,7 @@ function printConsole()
             --i hate this as much as you do
             ["wireless"]=wireless,
             ["wired"]=wired,
-            ["packetsRecived"]=packetsRecived,
+            ["packetsRecieved"]=packetsRecieved,
             ["packetsForwarded"]=packetsForwarded,
             ["packetsSent"]=packetsSent,
             ["badPackets"]=badPackets,
@@ -261,7 +261,7 @@ function main()--main loop for reciving and processing
         if valid then
             if channel == 65491 then
                 table.insert(blockoutlist,packet["check"])
-                packetsRecived = packetsRecived + 1
+                packetsRecieved = packetsRecieved + 1
                 if attemptForward(packet["destination"],packet) then
                     packetsSent = packetsSent + 1
                 else
@@ -270,7 +270,7 @@ function main()--main loop for reciving and processing
                 end
             elseif channel == 65492 then
                 table.insert(blockoutlist,packet["check"])
-                packetsRecived = packetsRecived + 1
+                packetsRecieved = packetsRecieved + 1
                 if attemptForward(packet["destination"],packet) then
                     packetsSent = packetsSent + 1
                 else

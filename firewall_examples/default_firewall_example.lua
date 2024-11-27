@@ -9,7 +9,7 @@ function firewall.ingress(data, packet) -- the ingress is the function that filt
         -- .from : the last computer that interacted with this packet (sender/switch)
     -- the packet parameter is the data that the packet is carrying (the  contents of the packet)
 
-    log("i just recived a packet") -- the log function prints to the switch's log.txt (if it has one)
+    log("i just recieved a packet") -- the log function prints to the switch's log.txt (if it has one)
 
     return true
     -- a firewall function returning nothing or true will allow the packet to go through with no change
