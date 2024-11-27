@@ -1,5 +1,7 @@
 firewall = {} --the table that will contain the firewall
 
+-- THE FIREWALL WILL ONLY LOAD IF IT IS RENAMED 'firewall.lua'
+
 function firewall.ingress(data, packet) -- the ingress is the function that filters in *INCOMING* traffic
     -- the data parameter contains a table of useful data about the packet
         -- .port : the name of the modem that the packet can in from
