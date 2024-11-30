@@ -170,7 +170,7 @@ function attemptForward(id,message)--attemps to find destination computer for pa
             end
         else
             if ports[x].isWireless() then
-                handshakeid = os.startTimer(0.5)
+                handshakeid = os.startTimer(0.1)
                 ports[x].transmit(65493,id,handshakeid)
                 state = true
                 while state do
