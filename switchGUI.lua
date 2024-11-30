@@ -1,4 +1,4 @@
-o={}
+local o={}
 
 function o.switchDisplay(data)
     colored = multishell~=nil
