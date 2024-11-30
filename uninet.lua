@@ -1,4 +1,4 @@
-output = {}
+local output = {}
 blockoutlist={}
 
 function output.openAll()
