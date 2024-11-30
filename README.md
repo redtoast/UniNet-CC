@@ -17,4 +17,11 @@ Uninet also includes openAll() and closeAll() for QOL
 ## Switch
 A switch in networks refers to a machine that forwards data between networks and form bigger networks, in Uni that means connecting wired and wireless networks to other wired or wireless networks.
 
-simply attach modems to the switch to add that network to switch, connecting multible switches can make your networks even bigger, you can also code your own firewalls *(examples provided)* to filter, modify, or just block packets of traffic.
+simply attach modems to the switch to add that network to switch, connecting multible switches can make your networks even bigger.
+
+## Firewall
+
+you can code your own firewalls to filter, modify, or just block packets of traffic traveling through switches.
+
+the firewalls can be made with ease, you can use specific criteria provided by the switch to filter through traffic, or even overwrite it.
+a all encompassing example for learning how to make firewalls is `firewall_examples/default_firewall_example.lua`
