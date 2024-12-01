@@ -1,4 +1,4 @@
-local output = {}
+output = {}
 blockoutlist={}
 
 function output.openAll()
@@ -10,32 +10,51 @@ function output.openAll()
     end)
 end
 function output.open(modem)
-    modem = peripheral.wrap(modem)
-    modem.open(65490)
-    if modem.isWireless() then
-        modem.open(65493)
-    end
-end
-function output.close(modem)
-    modem = peripheral.wrap(modem)
-    modem.close(65490)
-    if modem.isWireless() then
-        modem.close(65493)
-    end
-end
-function output.close(modem)
-    modem = peripheral.wrap(modem)
-    if modem.isOpen(65490) then
+    if modem then
+        modem = peripheral.wrap(modem)
+        modem.open(65490)
         if modem.isWireless() then
-            if modem.isOpen(65493) then
-                return true
+            modem.open(65493)
+        end
+    else
+        output.openAll()
+    end
+end
+function output.close(modem)
+    if modem then
+        modem = peripheral.wrap(modem)
+        modem.close(65490)
+        if modem.isWireless() then
+            modem.close(65493)
+        end
+    else
+        output.closeAll()
+    end
+end
+function output.isOpen(modem)
+    if modem then
+        modem = peripheral.wrap(modem)
+        if modem.isOpen(65490) then
+            if modem.isWireless() then
+                return modem.isOpen(65493)
             else
-                return false
+                return true
             end
         else
-            return true
+            return false
         end
+    else
+        return output.isAnyOpen()
     end
+end
+function output.isAnyOpen()
+    state = false
+    peripheral.find("modem",function(name,modem)
+        if output.isOpen(name) then
+            state = true
+        end
+    end)
+    return state
 end
 function output.closeAll()
     peripheral.find("modem",function(name,modem)
@@ -73,24 +92,48 @@ function validatePacket(packet,protocol)--validates the incoming modem messages 
     return true
 end
 
-function output.broadcast(data,protocol)--sends a message with a recipient id of -1, which functions as a broadcast
-    packet = {
-        ["destination"] = -1,
-        ["source"] = os.getComputerID(),
-        ["age"] = 10,
-        ["data"] = data,
-        ["protocol"] = protocol
-    }
-
-    packet["check"] = tostring(packet)
-    table.insert(blockoutlist,packet["check"])
-
+function attemptDirect(id,message)--attempts to find the target computer before needing to forward it to a switch (same as attemptForward on a switch)
     peripheral.find("modem",function(name,modem)
-        modem.transmit(65491,0,packet)
+        if message["destination"]==-1 then --broadcasting
+            packetsSent = packetsSent + 1
+            message["from"] = os.getComputerID()
+            modem.transmit(65490,0,message)
+        else
+            if modem.isWireless() then
+                handshakeid = os.startTimer(0.1)
+                modem.transmit(65493,id,handshakeid)
+                state = true
+                while state do
+                    event,timerid,channel,_,reply = os.pullEvent()
+                    if event=="timer" and timerid==handshakeid then
+                        state=false
+                    elseif event=="modem_message" and channel==65494 then
+                        if reply==handshakeid then
+                            message["from"] = os.getComputerID()
+                            modem.transmit(65490,0,message)
+                            return true
+                        end
+                    end
+                end
+            else
+                terminals = modem.getNamesRemote()
+                for y=1,#terminals do
+                    if peripheral.hasType(terminals[y],"computer") then
+                        if peripheral.wrap(terminals[y]).getID()==id then
+                            message["from"] = os.getComputerID()
+                            modem.transmit(65490,0,message)
+                            return true
+                        end
+                    end
+                end
+            end
+        end
     end)
+    return false
 end
 
-function output.send(reciever,data,protocol)--sends a packet with encapsulated data
+function unicast(reciever,data,protocol)-- the basic sending function all the others build off of
+    --packet creation
     packet = {
         ["destination"] = reciever,
         ["source"] = os.getComputerID(),
@@ -99,12 +142,26 @@ function output.send(reciever,data,protocol)--sends a packet with encapsulated d
         ["data"] = data,
         ["protocol"] = protocol
     }
-
     packet["check"] = tostring(packet)
 
-    peripheral.find("modem",function(name,modem)
-        modem.transmit(65491,0,packet)
-    end)
+    if not attemptDirect(reciever,packet) then
+        peripheral.find("modem",function(name,modem)
+            modem.transmit(65491,0,packet)
+        end)
+    end
+
+    return packet["check"]
+end
+
+function output.broadcast(data,protocol)--sends a message with a recipient id of -1, which functions as a broadcast
+    check = unicast(-1,data,protocol)
+    table.insert(blockoutlist,check)
+end
+
+function output.send(reciever,data,protocol)--sends a packet with encapsulated data
+    if not output.isOpen() then return false end
+    unicast(reciever,data,protocol)
+    return true
 end
 
 function output.recieve(protocol,timeout)--recieves uninet packets and unencapsulate's them
