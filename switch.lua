@@ -160,7 +160,7 @@ function transmit(modem,packet)
             ["nSender"] = packet["source"],
             ["sProtocol"] = packet["protocol"]
         }
-        modem.transmit(packet["destination"], packet["source"], rednetPacket)
+        modem.transmit(packet["destination"]%65500, packet["source"]%65500, rednetPacket)
     end
 end
 
@@ -195,7 +195,7 @@ function attemptForward(id,message)--attemps to find destination computer for pa
                                 ["nSender"] = message["source"],
                                 ["sProtocol"] = packet["protocol"]
                             }
-                            modem.transmit(message["destination"], message["source"], rednetPacket)
+                            modem.transmit(message["destination"]%65500, message["source"]%65500, rednetPacket)
                         end
                     elseif event=="modem_message" and channel==65494 then
                         if reply==handshakeid then
