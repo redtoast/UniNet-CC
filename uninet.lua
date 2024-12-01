@@ -1,7 +1,8 @@
-output = {}
+library = {}
 blockoutlist={}
+rednetCompat = false
 
-function output.openAll()
+function library.openAll()
     peripheral.find("modem",function(name,modem)
         modem.open(65490)
         if modem.isWireless() then
@@ -9,18 +10,21 @@ function output.openAll()
         end
     end)
 end
-function output.open(modem)
+function library.open(modem)
     if modem then
-        modem = peripheral.wrap(modem)
-        modem.open(65490)
-        if modem.isWireless() then
-            modem.open(65493)
+        pModem = peripheral.wrap(modem)
+        pModem.open(65490)
+        if pModem.isWireless() then
+            pModem.open(65493)
+        end
+        if rednetCompat then
+            rednet.open(modem)
         end
     else
-        output.openAll()
+        library.openAll()
     end
 end
-function output.close(modem)
+function library.close(modem)
     if modem then
         modem = peripheral.wrap(modem)
         modem.close(65490)
@@ -28,10 +32,10 @@ function output.close(modem)
             modem.close(65493)
         end
     else
-        output.closeAll()
+        library.closeAll()
     end
 end
-function output.isOpen(modem)
+function library.isOpen(modem)
     if modem then
         modem = peripheral.wrap(modem)
         if modem.isOpen(65490) then
@@ -44,25 +48,38 @@ function output.isOpen(modem)
             return false
         end
     else
-        return output.isAnyOpen()
+        return library.isAnyOpen()
     end
 end
-function output.isAnyOpen()
+function library.isAnyOpen()
     state = false
     peripheral.find("modem",function(name,modem)
-        if output.isOpen(name) then
+        if library.isOpen(name) then
             state = true
         end
     end)
     return state
 end
-function output.closeAll()
+function library.closeAll()
     peripheral.find("modem",function(name,modem)
         modem.close(65490)
         if modem.isWireless() then
             modem.close(65493)
         end
     end)
+end
+
+function library.rednetMode(state)
+    if state then
+        peripheral.find("modem",function(name,modem)
+            if library.isOpen(name) then
+                rednet.open(name)
+            end
+        end)
+    else
+        rednet.close()
+    end
+    rednetCompat=state
 end
 
 function validatePacket(packet,protocol)--validates the incoming modem messages are uninet packets and ment for this machine to recieve
@@ -72,7 +89,7 @@ function validatePacket(packet,protocol)--validates the incoming modem messages 
     end) then
         return false
     end
-    required = {"age","source","destination","data","check"}
+    required = {"source","destination","data","check","compat"}
     for x=1,#required do
         if packet[required[x]]==nil then
             return false
@@ -83,7 +100,7 @@ function validatePacket(packet,protocol)--validates the incoming modem messages 
             return false
         end
     end
-    if packet["destination"]~=os.getComputerID() and packet["destination"] ~= 0 then
+    if packet["destination"]~=os.getComputerID() and packet["destination"] ~= -1 then
         return false
     end
     if protocol~=nil and packet["protocol"] ~= protocol then
@@ -92,12 +109,52 @@ function validatePacket(packet,protocol)--validates the incoming modem messages 
     return true
 end
 
+function validateRednet(packet,protocol)--validates the incoming modem messages are rednet packets and ment for this machine to recieve
+    if not pcall(function()
+        buffer = textutils.serializeJSON(packet)
+        textutils.unserializeJSON(buffer)
+    end) then
+        return false
+    end
+    required = {"message","nMessageID","nRecipient","nSender"}
+    for x=1,#required do
+        if packet[required[x]]==nil then
+            return false
+        end
+    end
+    for x=1,#blockoutlist do
+        if blockoutlist[x]==packet["nMessageID"] then
+            return false
+        end
+    end
+    if packet["nRecipient"]~=os.getComputerID() and packet["nRecipient"] ~= -1 then
+        return false
+    end
+    if protocol~=nil and packet["sProtocol"] ~= protocol then
+        return false
+    end
+    return true
+end
+
+function transmit(modem,packet)
+    modem.transmit(65490,0,packet)
+    if rednetCompat then
+        rednetPacket = {
+            ["message"] = packet["data"],
+            ["nMessageID"] = packet["check"],
+            ["nRecipient"] = packet["destination"],
+            ["nSender"] = packet["source"],
+            ["sProtocol"] = packet["protocol"]
+        }
+        modem.transmit(packet["destination"], packet["source"], rednetPacket)
+    end
+end
+
 function attemptDirect(id,message)--attempts to find the target computer before needing to forward it to a switch (same as attemptForward on a switch)
     peripheral.find("modem",function(name,modem)
         if message["destination"]==-1 then --broadcasting
-            packetsSent = packetsSent + 1
             message["from"] = os.getComputerID()
-            modem.transmit(65490,0,message)
+            transmit(modem,message)
         else
             if modem.isWireless() then
                 handshakeid = os.startTimer(0.1)
@@ -107,10 +164,20 @@ function attemptDirect(id,message)--attempts to find the target computer before 
                     event,timerid,channel,_,reply = os.pullEvent()
                     if event=="timer" and timerid==handshakeid then
                         state=false
+                        if rednetCompat then
+                            rednetPacket = {
+                                ["message"] = message["data"],
+                                ["nMessageID"] = message["check"],
+                                ["nRecipient"] = message["destination"],
+                                ["nSender"] = message["source"],
+                                ["sProtocol"] = packet["protocol"]
+                            }
+                            modem.transmit(message["destination"], message["source"], rednetPacket)
+                        end
                     elseif event=="modem_message" and channel==65494 then
                         if reply==handshakeid then
                             message["from"] = os.getComputerID()
-                            modem.transmit(65490,0,message)
+                            transmit(modem,message)
                             return true
                         end
                     end
@@ -121,7 +188,7 @@ function attemptDirect(id,message)--attempts to find the target computer before 
                     if peripheral.hasType(terminals[y],"computer") then
                         if peripheral.wrap(terminals[y]).getID()==id then
                             message["from"] = os.getComputerID()
-                            modem.transmit(65490,0,message)
+                            transmit(modem,message)
                             return true
                         end
                     end
@@ -137,12 +204,11 @@ function unicast(reciever,data,protocol)-- the basic sending function all the ot
     packet = {
         ["destination"] = reciever,
         ["source"] = os.getComputerID(),
-        ["age"] = 10,
-        ["type"] = "beta",
         ["data"] = data,
-        ["protocol"] = protocol
+        ["protocol"] = protocol,
+        ["compat"] = rednetCompat
     }
-    packet["check"] = tostring(packet)
+    packet["check"] = math.random(1,21474833647)
 
     if not attemptDirect(reciever,packet) then
         peripheral.find("modem",function(name,modem)
@@ -153,18 +219,18 @@ function unicast(reciever,data,protocol)-- the basic sending function all the ot
     return packet["check"]
 end
 
-function output.broadcast(data,protocol)--sends a message with a recipient id of -1, which functions as a broadcast
+function library.broadcast(data,protocol)--sends a message with a recipient id of -1, which functions as a broadcast
     check = unicast(-1,data,protocol)
     table.insert(blockoutlist,check)
 end
 
-function output.send(reciever,data,protocol)--sends a packet with encapsulated data
-    if not output.isOpen() then return false end
+function library.send(reciever,data,protocol)--sends a packet with encapsulated data
+    if not library.isOpen() then return false end
     unicast(reciever,data,protocol)
     return true
 end
 
-function output.recieve(protocol,timeout)--recieves uninet packets and unencapsulate's them
+function library.recieve(protocol,timeout)--recieves uninet packets and unencapsulate's them
     if timeout then
         timeoutid = os.startTimer(timeout)
     else
@@ -178,7 +244,12 @@ function output.recieve(protocol,timeout)--recieves uninet packets and unencapsu
             if channel==65490 then
                 if validatePacket(packet,protocol) then
                     table.insert(blockoutlist,packet["check"])
-                    return packet["source"],packet["data"]
+                    return packet["source"], packet["data"], packet["protocol"]
+                end
+            elseif channel==os.getComputerID() and rednetCompat then
+                if validateRednet(packet,protocol) then
+                    table.insert(blockoutlist,packet["nMessageID"])
+                    return packet["nSender"], packet["message"], packet["sProtocol"]
                 end
             elseif channel==65493 then
                 if handshakeid==os.getComputerID() then
@@ -189,4 +260,4 @@ function output.recieve(protocol,timeout)--recieves uninet packets and unencapsu
     end
 end
 
-return output
+return library
