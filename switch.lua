@@ -124,16 +124,12 @@ function validatePacket(packet,port)--filters incomming modem messages to ensure
         garbageIngress = garbageIngress + 1
         return false
     end
-    required = {"age","source","destination","data","check"}
+    required = {"source","destination","data","check","compat"}
     for x=1,#required do
         if packet[required[x]]==nil then
             badPackets = badPackets + 1
             return false
         end
-    end
-    if packet["age"]==0 then
-        disregardedpackets = disregardedpackets + 1
-        return false
     end
     for x=1,#blockoutlist do
         if blockoutlist[x]==message["check"] then
@@ -154,6 +150,20 @@ function validatePacket(packet,port)--filters incomming modem messages to ensure
     end
 end
 
+function transmit(modem,packet)
+    modem.transmit(65490,0,packet)
+    if packet["compat"] then
+        rednetPacket = {
+            ["message"] = packet["data"],
+            ["nMessageID"] = packet["check"],
+            ["nRecipient"] = packet["destination"],
+            ["nSender"] = packet["source"],
+            ["sProtocol"] = packet["protocol"]
+        }
+        modem.transmit(packet["destination"], packet["source"], rednetPacket)
+    end
+end
+
 function attemptForward(id,message)--attemps to find destination computer for packets, returns false if cant
     for x=1, #ports do
         if message["destination"]==-1 then --broadcasting
@@ -161,12 +171,12 @@ function attemptForward(id,message)--attemps to find destination computer for pa
             firewall = firewallInterface(message,true,peripheral.getName(ports[x]),false)
             if firewall==true or firewall==nil then
                 message["from"] = os.getComputerID()
-                ports[x].transmit(65490,0,message)
+                transmit(ports[x],message)
             elseif firewall ~= false then
                 message["data"] = firewall
                 FWmodified = FWmodified + 1
                 message["from"] = os.getComputerID()
-                ports[x].transmit(65490,0,message)
+                transmit(ports[x],message)
             end
         else
             if ports[x].isWireless() then
@@ -177,17 +187,27 @@ function attemptForward(id,message)--attemps to find destination computer for pa
                     event,timerid,channel,_,reply = os.pullEvent()
                     if event=="timer" and timerid==handshakeid then
                         state=false
+                        if rednetCompat then
+                            rednetPacket = {
+                                ["message"] = message["data"],
+                                ["nMessageID"] = message["check"],
+                                ["nRecipient"] = message["destination"],
+                                ["nSender"] = message["source"],
+                                ["sProtocol"] = packet["protocol"]
+                            }
+                            modem.transmit(message["destination"], message["source"], rednetPacket)
+                        end
                     elseif event=="modem_message" and channel==65494 then
                         if reply==handshakeid then
                             firewall = firewallInterface(message,true,peripheral.getName(ports[x]),false)
                             if firewall==true or firewall==nil then
                                 message["from"] = os.getComputerID()
-                                ports[x].transmit(65490,0,message)
+                                transmit(ports[x],message)
                             elseif firewall ~= false then
                                 message["data"] = firewall
                                 FWmodified = FWmodified + 1
                                 message["from"] = os.getComputerID()
-                                ports[x].transmit(65490,0,message)
+                                transmit(ports[x],message)
                             end
                             return true
                         end
@@ -201,12 +221,12 @@ function attemptForward(id,message)--attemps to find destination computer for pa
                             firewall = firewallInterface(message,true,peripheral.getName(ports[x]),false)
                             if firewall==true or firewall==nil then
                                 message["from"] = os.getComputerID()
-                                ports[x].transmit(65490,0,message)
+                                transmit(ports[x],message)
                             elseif firewall ~= false then
                                 message["data"] = firewall
                                 FWmodified = FWmodified + 1
                                 message["from"] = os.getComputerID()
-                                ports[x].transmit(65490,0,message)
+                                transmit(ports[x],message)
                             end
                             return true
                         end
@@ -218,13 +238,7 @@ function attemptForward(id,message)--attemps to find destination computer for pa
     return false
 end
 
-function floodPorts(message,ageing)--if attemptForward fails just shoot the packet at other switchs and hope for the best
-    if message["age"]<=1 then
-        return nil
-    end
-    if ageing then
-        message["age"]=-1
-    end
+function floodPorts(message)--if attemptForward fails just shoot the packet at other switchs and hope for the best
     for x=1,#ports do
         if not ports[x].isWireless() then
             firewall = firewallInterface(message,true,peripheral.getName(ports[x]),true)
@@ -254,7 +268,7 @@ function main()--main loop for reciving and processing
                     packetsSent = packetsSent + 1
                 else
                     packetsForwarded = packetsForwarded + 1
-                    floodPorts(packet,false)
+                    floodPorts(packet)
                 end
             elseif channel == 65492 then
                 table.insert(blockoutlist,packet["check"])
@@ -263,7 +277,7 @@ function main()--main loop for reciving and processing
                     packetsSent = packetsSent + 1
                 else
                     packetsForwarded = packetsForwarded + 1
-                    floodPorts(packet,true)
+                    floodPorts(packet)
                 end
             end
         end
